@@ -1,18 +1,48 @@
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urldefrag
+from bs4 import BeautifulSoup
+from collections import defaultdict
+
+seen = set()
+word_freqs = defaultdict(int)
+longest_page = ""
+peak_words = -1
+
+with open('stopWords.txt', 'r') as f:
+    stop_words = {line for line in f}
 
 def scraper(url, resp):
-    links = extract_next_links(url, resp)
+    seen.add(url)
+    print(url)
+    soup = BeautifulSoup(resp.raw_response, "lxml")
+    links = extract_next_links(soup)
     return [link for link in links if is_valid(link)]
 
-def extract_next_links(url, resp):
-    # Implementation requred.
-    return list()
+def extract_next_links(soup):
+    return [urldefrag(a.get('href')).url for a in soup.find_all('a')]
+
+token_pat = r"[^_\W]+"
+def extract_info(url, soup):
+    global peak_words, longest_page
+    lines = soup.get_text().split("\n")
+    page_word_count = 0
+    for l in lines:
+        l = l.strip()
+        if not l: continue
+        words = re.finditer(token_pat, l)
+        for w in words:
+            w = w.group().lower()
+            page_word_count += 1
+            word_freqs[w] += 1
+    if page_word_count > peak_words:
+        longest_page = url
+        peak_words = page_word_count
 
 def is_valid(url):
     try:
+        if url in seen: return False
         parsed = urlparse(url)
-        if parsed.scheme not in set(["http", "https"]):
+        if parsed.scheme not in {"http", "https"}:
             return False
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
