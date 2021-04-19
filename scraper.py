@@ -14,7 +14,7 @@ with open('stopWords.txt', 'r') as f:
 def scraper(url, resp):
     seen.add(url)
     print(url)
-    soup = BeautifulSoup(resp.raw_response, "lxml")
+    soup = BeautifulSoup(resp, "lxml")
     links = extract_next_links(soup)
     return [link for link in links if is_valid(link)]
 
