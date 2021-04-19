@@ -12,9 +12,21 @@ with open('stopWords.txt', 'r') as f:
     stop_words = {line for line in f}
 
 def scraper(url, resp):
+    resp = resp.raw_response
+    print(url, end='')
+    try:
+        head = resp.headers
+        print('||', head['content-type'], end='')
+        if 'content-type' in head and head['content-type'] != "text/html": return []
+        if 'content-length' in head and int(head['content-length']) > 4000000: return []
+    except (AttributeError, KeyError):
+        pass
+    print()
     seen.add(url)
-    print(url)
-    soup = BeautifulSoup(resp, "lxml")
+
+
+    if not resp: return []
+    soup = BeautifulSoup(resp.text, "lxml")
     links = extract_next_links(soup)
     return [link for link in links if is_valid(link)]
 
@@ -40,7 +52,7 @@ def extract_info(url, soup):
 
 def is_valid(url):
     try:
-        if url in seen: return False
+        if not url or url in seen: return False
         parsed = urlparse(url)
         if parsed.scheme not in {"http", "https"}:
             return False
