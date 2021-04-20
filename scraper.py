@@ -1,5 +1,4 @@
 import re
-from crawler.worker import load_data, save_data
 from urllib.parse import urlparse, urldefrag
 from bs4 import BeautifulSoup
 from collections import defaultdict
@@ -40,18 +39,11 @@ def scraper(url, resp):
     count += 1
     print("\n" + url)
     monitor_info()
-    if count % 50 == 0: saveData()
 
     soup = BeautifulSoup(resp.text, "lxml")
     links = extract_next_links(soup)
     extract_info(url, soup)
     return [link for link in links if is_valid(link)]
-
-def saveData():
-    with open('saveData.txt', 'w') as f:
-        f.write(f"{repr(count)}\n{repr(longest_page)}\n{repr(peak_words)}\n")
-        f.write(f"{repr(seen)}\n{repr(word_freqs)}"
-                f"\n{repr(domains)}\n{repr(ics_subdomains)}")
 
 def monitor_info():
     print("="*40)
