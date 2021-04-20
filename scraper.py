@@ -19,8 +19,8 @@ def scraper(url, resp):
     try:
         head = resp.headers
         print(' ||', head['content-type'])
-        if 'content-type' in head and head['content-type'].find("html") == -1: return []
-        if 'content-length' in head and int(head['content-length']) > 4000000: return []
+        if 'content-type' in head and head['content-type'].find("html") == -1: return [] # type restriction
+        if 'content-length' in head and int(head['content-length']) > 4000000: return [] # size restriction 4MB
     except (AttributeError, KeyError):
         pass
     monitor_info()
@@ -33,9 +33,15 @@ def scraper(url, resp):
 
 def monitor_info():
     print("\n" + "="*20)
-    print(f"UNIQUE LINKS: {len(seen)}")
+    print(f"UNIQUE LINKS: {(c:=len(seen))}")
     print(f"UNIQUE WORDS: {len(word_freqs)}")
     print(f"LONGEST PAGE: {longest_page} || # WORDS: {peak_words}")
+    if c % 50 == 0: # every 50, print the domain counts
+        print(f"{k}:{v}\n" for k,v in domains.items())
+        print("-"*20)
+        print("ICS SUBDOMAINS:")
+        print(f"{v:>5}|{k}" for k,v in ics_subdomains.items())
+        print("-"*20)
     print("="*20, end="\n\n")
 
 def extract_next_links(soup):
@@ -59,21 +65,29 @@ def extract_info(url, soup):
         longest_page = url
         peak_words = page_word_count
 
-domains = [
-r".*\.cs\.uci\.edu\/.*",
-r".*\.ics\.uci\.edu\/.*",
-r".*\.informatics\.uci\.edu\/.*",
-r".*\.stat\.uci\.edu\/.*",
-r"today\.uci\.edu\/department\/information_computer_sciences\/.*",
-]
+domains = {
+r".*\.cs\.uci\.edu\/.*":0,
+r".*\.ics\.uci\.edu\/.*":0,
+r".*\.informatics\.uci\.edu\/.*":0,
+r".*\.stat\.uci\.edu\/.*":0,
+r"today\.uci\.edu\/department\/information_computer_sciences\/.*":0,
+}
+ics_subdomains = defaultdict(int)
 def is_valid(url):
     try:
         if not url or url in seen: return False
         parsed = urlparse(url)
         if parsed.scheme not in {"http", "https"}:
             return False
-        correct_domain = sum(1 for d in domains if re.match(d, url))
-        if correct_domain == 0: return False
+        correct_domain = False
+        for d in domains:
+            if re.match(d, url):
+                correct_domain = True
+                domains[d] += 1
+                if d == r".*\.ics\.uci\.edu\/.*":
+                    ics_subdomains[parsed.netloc] += 1
+                break
+        if not correct_domain: return False
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
