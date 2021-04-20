@@ -1,6 +1,7 @@
 import re
 from urllib.parse import urlparse, urldefrag
 from bs4 import BeautifulSoup
+import requests
 # from collections import defaultdict   # hard to load with eval()
 
 count = 0
@@ -44,7 +45,7 @@ def scraper(url, resp):
     monitor_info(url)
     links = extract_next_links(soup)
     extract_info(url, soup)
-    return [link for link in links if is_valid(link)]
+    return [link for link in links if link != "" and is_valid(link, resp)]
 
 def is_ascii(s):
     """Check if the characters in string s are in ASCII, U+0-U+7F."""
@@ -84,24 +85,27 @@ def extract_info(url, soup):
     for l in lines:
         l = l.strip()
         if not l: continue
-        words = re.finditer(token_pat, l)
-        for w in words:
-            w = w.group().lower()
-            if w not in stop_words and len(w) > 1 and is_ascii(w):
+        for word in re.finditer(token_pat, l):
+            word = word.group().lower()
+            if word not in stop_words and len(word) > 1 and is_ascii(word):
                 page_word_count += 1
-                if not w in word_freqs: word_freqs[w] = 0
-                word_freqs[w] += 1
+                if word not in word_freqs: word_freqs[word] = 0
+                word_freqs[word] += 1
     if page_word_count > peak_words:
         longest_page = url
         peak_words = page_word_count
 
-def is_valid(url):
-    try:
+def is_valid(url, resp):
+    try:    
         parsed = urlparse(url)
         s_url = (parsed.netloc + parsed.path).lower()
+        if s_url == "ics.uci.edu/~kay/wordlist.txt": return False
+        #head = requests.head(url)
         if not s_url or s_url in seen: return False
         if parsed.scheme not in {"http", "https"}:
             return False
+        #if not 200 <= head.status_code <= 202: return False
+        if not 200 <= resp.status_code <= 202: return False
         if re.match(
                 r".*\.(css|js|bmp|gif|jpe?g|ico"
                 + r"|png|tiff?|mid|mp2|mp3|mp4"
