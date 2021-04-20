@@ -10,11 +10,11 @@ peak_words = 0
 seen = set()
 word_freqs = defaultdict(int)
 domains = {
-r".*\.cs\.uci\.edu\/.*":0,
-r".*\.ics\.uci\.edu\/.*":0,
-r".*\.informatics\.uci\.edu\/.*":0,
-r".*\.stat\.uci\.edu\/.*":0,
-r"today\.uci\.edu\/department\/information_computer_sciences\/.*":0,
+r".*informatics\.uci\.edu\/.*":0,
+r".*ics\.uci\.edu\/.*":0,
+r".*cs\.uci\.edu\/.*":0,
+r".*stat\.uci\.edu\/.*":0,
+r".*today\.uci\.edu\/department\/information_computer_sciences\/.*":0,
 }
 ics_subdomains = defaultdict(int)
 
@@ -33,19 +33,21 @@ def scraper(url, resp):
             and head['content-type'].find("text") == -1: return [] # type restriction
         # if 'content-length' in head and int(head['content-length']) > 4000000:
         #     return [] # size restriction 4MB
+        soup = BeautifulSoup(resp.text, "lxml")
     except (AttributeError, KeyError):
-        pass
+        return []
 
     count += 1
-    print("\n" + url)
+
     monitor_info()
 
-    soup = BeautifulSoup(resp.text, "lxml")
     links = extract_next_links(soup)
     extract_info(url, soup)
     return [link for link in links if is_valid(link)]
 
-def monitor_info():
+def monitor_info(url):
+    print("="*40)
+    print("\n" + url)
     print("="*40)
     print(f"UNIQUE LINKS VISITED:    {count}")
     print(f"UNIQUE LINKS DISCOVERED: {len(seen)}")
@@ -58,12 +60,12 @@ def monitor_info():
             print(f"{word_freqs[x]:<7} | {x}")
         print("-" * 40)
         print("DOMAIN COUNTS:")
-        pretty = r'\\'
+        pretty = r'[\\?]'
         for k,v in domains.items():
-            print(f"{v:<6} | {re.sub(pretty, '', k if k[0] != '.' else k[1:])}")
+            print(f"{v:<7} | {re.sub(pretty, '', k[1:])}")
         print("-"*40)
         print("ICS SUBDOMAIN COUNTS:")
-        for k,v in ics_subdomains.items(): print(f"{v:<6} | {k}")
+        for k,v in ics_subdomains.items(): print(f"{v:<7} | {k}")
     print("="*40, end="\n\n")
 
 def extract_next_links(soup):
@@ -90,7 +92,7 @@ def extract_info(url, soup):
 def is_valid(url):
     try:
         parsed = urlparse(url)
-        s_url = parsed.netloc + parsed.path
+        s_url = (parsed.netloc + parsed.path).lower()
         if not s_url or s_url in seen: return False
         if parsed.scheme not in {"http", "https"}:
             return False
@@ -107,8 +109,8 @@ def is_valid(url):
         for d in domains:
             if re.match(d, s_url):
                 domains[d] += 1
-                if d == r".*\.ics\.uci\.edu\/.*":
-                    ics_subdomains[parsed.netloc] += 1
+                if d == r".*ics\.uci\.edu\/.*":  # bad
+                    ics_subdomains[parsed.netloc.lower()] += 1
                 seen.add(s_url)
                 return True
         return False
