@@ -15,22 +15,26 @@ with open('stopWords.txt', 'r') as f:
 def scraper(url, resp):
     resp = resp.raw_response
     if not resp: return []
-    print()
     print(url, end='')
     try:
         head = resp.headers
-        print(' ||', head['content-type'], end='')
+        print(' ||', head['content-type'])
         if 'content-type' in head and head['content-type'].find("html") == -1: return []
         if 'content-length' in head and int(head['content-length']) > 4000000: return []
     except (AttributeError, KeyError):
         pass
-    print()
-    print(f"UNIQUE LINKS: {len(seen)}\n")
+    monitor_info()
     seen.add(url)
 
     soup = BeautifulSoup(resp.text, "lxml")
     links = extract_next_links(soup)
     return [link for link in links if is_valid(link)]
+
+def monitor_info():
+    print(f"UNIQUE LINKS: {len(seen)}")
+    print(f"UNIQUE WORDS: {len(word_freqs)}")
+    print(f"LONGEST PAGE: {longest_page} || # WORDS: {peak_words}")
+    print("="*20, end="\n\n\n")
 
 def extract_next_links(soup):
     return [urldefrag(a.get('href')).url for a in soup.find_all('a')]
@@ -46,8 +50,9 @@ def extract_info(url, soup):
         words = re.finditer(token_pat, l)
         for w in words:
             w = w.group().lower()
-            page_word_count += 1
-            word_freqs[w] += 1
+            if w not in stop_words:
+                page_word_count += 1
+                word_freqs[w] += 1
     if page_word_count > peak_words:
         longest_page = url
         peak_words = page_word_count
