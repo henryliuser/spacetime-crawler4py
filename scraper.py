@@ -10,11 +10,11 @@ peak_words = 0
 seen = set()
 word_freqs = defaultdict(int)
 domains = {
-r".*informatics\.uci\.edu\/.*":0,
-r".*ics\.uci\.edu\/.*":0,
-r".*cs\.uci\.edu\/.*":0,
-r".*stat\.uci\.edu\/.*":0,
-r".*today\.uci\.edu\/department\/information_computer_sciences\/.*":0,
+r".*\.informatics\.uci\.edu\/.*":0,
+r".*\.ics\.uci\.edu\/.*":0,
+r".*\.cs\.uci\.edu\/.*":0,
+r".*\.stat\.uci\.edu\/.*":0,
+r".*\.today\.uci\.edu\/department\/information_computer_sciences\/.*":0,
 }
 ics_subdomains = defaultdict(int)
 
@@ -109,7 +109,7 @@ def is_valid(url):
         for d in domains:
             if re.match(d, s_url):
                 domains[d] += 1
-                if d == r".*ics\.uci\.edu\/.*":  # bad
+                if d == r".*\.ics\.uci\.edu\/.*":  # bad
                     ics_subdomains[parsed.netloc.lower()] += 1
                 seen.add(s_url)
                 return True
