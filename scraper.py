@@ -82,7 +82,7 @@ def extract_info(url, soup):
         words = re.finditer(token_pat, l)
         for w in words:
             w = w.group().lower()
-            if w not in stop_words and len(w) > 1:
+            if w not in stop_words and len(w) > 1 and w.isascii():
                 page_word_count += 1
                 word_freqs[w] += 1
     if page_word_count > peak_words:
