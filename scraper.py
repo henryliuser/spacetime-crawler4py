@@ -8,24 +8,26 @@ word_freqs = defaultdict(int)
 longest_page = ""
 peak_words = -1
 
+
 with open('stopWords.txt', 'r') as f:
     stop_words = {line for line in f}
 
 def scraper(url, resp):
     resp = resp.raw_response
+    if not resp: return []
+    print()
     print(url, end='')
     try:
         head = resp.headers
-        print('||', head['content-type'], end='')
-        if 'content-type' in head and head['content-type'] != "text/html": return []
+        print(' ||', head['content-type'], end='')
+        if 'content-type' in head and head['content-type'].find("html") == -1: return []
         if 'content-length' in head and int(head['content-length']) > 4000000: return []
     except (AttributeError, KeyError):
         pass
     print()
+    print(f"UNIQUE LINKS: {len(seen)}\n")
     seen.add(url)
 
-
-    if not resp: return []
     soup = BeautifulSoup(resp.text, "lxml")
     links = extract_next_links(soup)
     return [link for link in links if is_valid(link)]
@@ -50,12 +52,21 @@ def extract_info(url, soup):
         longest_page = url
         peak_words = page_word_count
 
+domains = [
+r".*\.cs\.uci\.edu\/.*",
+r".*\.ics\.uci\.edu\/.*",
+r".*\.informatics\.uci\.edu\/.*",
+r".*\.stat\.uci\.edu\/.*",
+r"today\.uci\.edu\/department\/information_computer_sciences\/.*",
+]
 def is_valid(url):
     try:
         if not url or url in seen: return False
         parsed = urlparse(url)
         if parsed.scheme not in {"http", "https"}:
             return False
+        correct_domain = sum(1 for d in domains if re.match(d, url))
+        if correct_domain == 0: return False
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
