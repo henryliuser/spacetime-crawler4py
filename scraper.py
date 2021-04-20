@@ -33,15 +33,16 @@ def scraper(url, resp):
 
 def monitor_info():
     print("\n" + "="*20)
-    print(f"UNIQUE LINKS: {(c:=len(seen))}")
+    print(f"UNIQUE LINKS: {len(seen)}")
     print(f"UNIQUE WORDS: {len(word_freqs)}")
     print(f"LONGEST PAGE: {longest_page} || # WORDS: {peak_words}")
-    if c % 50 == 0: # every 50, print the domain counts
-        print(f"{k}:{v}\n" for k,v in domains.items())
+    if len(seen) % 30 == 0: # every 30, print the domain counts
         print("-"*20)
-        print("ICS SUBDOMAINS:")
-        print(f"{v:>5}|{k}" for k,v in ics_subdomains.items())
+        print("DOMAIN COUNTS:")
+        for k,v in domains.items(): print(f"{v:<6}| {k}")
         print("-"*20)
+        print("ICS SUBDOMAIN COUNTS:")
+        for k,v in ics_subdomains.items(): print(f"{v:<6}| {k}")
     print("="*20, end="\n\n")
 
 def extract_next_links(soup):
@@ -79,24 +80,24 @@ def is_valid(url):
         parsed = urlparse(url)
         if parsed.scheme not in {"http", "https"}:
             return False
-        correct_domain = False
+        if re.match(
+                r".*\.(css|js|bmp|gif|jpe?g|ico"
+                + r"|png|tiff?|mid|mp2|mp3|mp4"
+                + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
+                + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
+                + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
+                + r"|epub|dll|cnf|tgz|sha1"
+                + r"|thmx|mso|arff|rtf|jar|csv"
+                + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower()): return False
+
         for d in domains:
             if re.match(d, url):
-                correct_domain = True
                 domains[d] += 1
                 if d == r".*\.ics\.uci\.edu\/.*":
                     ics_subdomains[parsed.netloc] += 1
-                break
-        if not correct_domain: return False
-        return not re.match(
-            r".*\.(css|js|bmp|gif|jpe?g|ico"
-            + r"|png|tiff?|mid|mp2|mp3|mp4"
-            + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
-            + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
-            + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
-            + r"|epub|dll|cnf|tgz|sha1"
-            + r"|thmx|mso|arff|rtf|jar|csv"
-            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
+                return True
+        return False
+
 
     except TypeError:
         print ("TypeError for ", parsed)
