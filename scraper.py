@@ -27,6 +27,8 @@ def scraper(url, resp):
     global count
     resp = resp.raw_response
     try:  # check for valid url
+
+        if not 200 <= resp.status <= 203: return []
         head = resp.headers
         if 'content-type' in head \
             and head['content-type'].find("html") == -1\
@@ -40,7 +42,7 @@ def scraper(url, resp):
     count += 1
 
     monitor_info()
-
+    soup = BeautifulSoup(resp.text, "lxml")
     links = extract_next_links(soup)
     extract_info(url, soup)
     return [link for link in links if is_valid(link)]
