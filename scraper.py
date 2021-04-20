@@ -1,14 +1,14 @@
 import re
 from urllib.parse import urlparse, urldefrag
 from bs4 import BeautifulSoup
-from collections import defaultdict
+# from collections import defaultdict   # hard to load with eval()
 
 count = 0
 longest_page = ""
 peak_words = 0
 
 seen = set()
-word_freqs = defaultdict(int)
+word_freqs = {}
 domains = {
 r".*\.informatics\.uci\.edu\/.*":0,
 r".*\.ics\.uci\.edu\/.*":0,
@@ -16,7 +16,7 @@ r".*\.cs\.uci\.edu\/.*":0,
 r".*\.stat\.uci\.edu\/.*":0,
 r".*\.today\.uci\.edu\/department\/information_computer_sciences\/.*":0,
 }
-ics_subdomains = defaultdict(int)
+ics_subdomains = {}
 
 
 
@@ -45,7 +45,7 @@ def scraper(url, resp):
     extract_info(url, soup)
     return [link for link in links if is_valid(link)]
 
-def monitor_info(url):
+def monitor_info(url, show_extra=False):
     print("="*40)
     print("\n" + url)
     print("="*40)
@@ -53,7 +53,7 @@ def monitor_info(url):
     print(f"UNIQUE LINKS DISCOVERED: {len(seen)}")
     print(f"UNIQUE WORDS: {len(word_freqs)}")
     print(f"LONGEST PAGE: {peak_words} WORDS | {longest_page}")
-    if count % 25 == 0: # every 25, print extra info
+    if show_extra or count % 50 == 0: # every 50, print extra info
         print("-"*40)
         print("TOP FREQUENT WORDS:")
         for x in sorted(word_freqs, key=lambda x:-word_freqs[x])[:5]:
@@ -84,6 +84,7 @@ def extract_info(url, soup):
             w = w.group().lower()
             if w not in stop_words and len(w) > 1 and w.isascii():
                 page_word_count += 1
+                if not w in word_freqs: word_freqs[w] = 0
                 word_freqs[w] += 1
     if page_word_count > peak_words:
         longest_page = url
@@ -110,7 +111,9 @@ def is_valid(url):
             if re.match(d, s_url):
                 domains[d] += 1
                 if d == r".*\.ics\.uci\.edu\/.*":  # bad
-                    ics_subdomains[parsed.netloc.lower()] += 1
+                    subdomain = parsed.netloc.lower()
+                    if subdomain not in ics_subdomains: ics_subdomains[subdomain] = 0
+                    ics_subdomains[subdomain] += 1
                 seen.add(s_url)
                 return True
         return False

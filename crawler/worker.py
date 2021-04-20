@@ -50,3 +50,5 @@ class Worker(Thread):
             self.count += 1
             if self.count % 50 == 0:
                 self.save_data()
+        self.save_data()
+        scraper.monitor_info("", True)
