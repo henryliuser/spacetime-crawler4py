@@ -1,13 +1,24 @@
 import re
+from crawler.worker import load_data, save_data
 from urllib.parse import urlparse, urldefrag
 from bs4 import BeautifulSoup
 from collections import defaultdict
 
 count = 0
-seen = set()
-word_freqs = defaultdict(int)
 longest_page = ""
 peak_words = 0
+
+seen = set()
+word_freqs = defaultdict(int)
+domains = {
+r".*\.cs\.uci\.edu\/.*":0,
+r".*\.ics\.uci\.edu\/.*":0,
+r".*\.informatics\.uci\.edu\/.*":0,
+r".*\.stat\.uci\.edu\/.*":0,
+r"today\.uci\.edu\/department\/information_computer_sciences\/.*":0,
+}
+ics_subdomains = defaultdict(int)
+
 
 
 with open('stopWords.txt', 'r') as f:
@@ -16,22 +27,31 @@ with open('stopWords.txt', 'r') as f:
 def scraper(url, resp):
     global count
     resp = resp.raw_response
-    if not resp: return []
-    try:
+    try:  # check for valid url
         head = resp.headers
-        if 'content-type' in head and head['content-type'].find("html") == -1: return [] # type restriction
-        if 'content-length' in head and int(head['content-length']) > 4000000: return [] # size restriction 4MB
+        if 'content-type' in head \
+            and head['content-type'].find("html") == -1\
+            and head['content-type'].find("text") == -1: return [] # type restriction
+        # if 'content-length' in head and int(head['content-length']) > 4000000:
+        #     return [] # size restriction 4MB
     except (AttributeError, KeyError):
         pass
+
     count += 1
-    print(url)
+    print("\n" + url)
     monitor_info()
-    # seen.add(url)
+    if count % 50 == 0: saveData()
 
     soup = BeautifulSoup(resp.text, "lxml")
     links = extract_next_links(soup)
     extract_info(url, soup)
     return [link for link in links if is_valid(link)]
+
+def saveData():
+    with open('saveData.txt', 'w') as f:
+        f.write(f"{repr(count)}\n{repr(longest_page)}\n{repr(peak_words)}\n")
+        f.write(f"{repr(seen)}\n{repr(word_freqs)}"
+                f"\n{repr(domains)}\n{repr(ics_subdomains)}")
 
 def monitor_info():
     print("="*40)
@@ -75,14 +95,6 @@ def extract_info(url, soup):
         longest_page = url
         peak_words = page_word_count
 
-domains = {
-r".*\.cs\.uci\.edu\/.*":0,
-r".*\.ics\.uci\.edu\/.*":0,
-r".*\.informatics\.uci\.edu\/.*":0,
-r".*\.stat\.uci\.edu\/.*":0,
-r"today\.uci\.edu\/department\/information_computer_sciences\/.*":0,
-}
-ics_subdomains = defaultdict(int)
 def is_valid(url):
     try:
         parsed = urlparse(url)
