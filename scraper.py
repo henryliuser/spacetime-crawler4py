@@ -28,13 +28,15 @@ def scraper(url, resp):
 
     soup = BeautifulSoup(resp.text, "lxml")
     links = extract_next_links(soup)
+    extract_info(url, soup)
     return [link for link in links if is_valid(link)]
 
 def monitor_info():
+    print("\n" + "="*20)
     print(f"UNIQUE LINKS: {len(seen)}")
     print(f"UNIQUE WORDS: {len(word_freqs)}")
     print(f"LONGEST PAGE: {longest_page} || # WORDS: {peak_words}")
-    print("="*20, end="\n\n\n")
+    print("="*20, end="\n\n")
 
 def extract_next_links(soup):
     return [urldefrag(a.get('href')).url for a in soup.find_all('a')]
