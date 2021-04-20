@@ -28,7 +28,7 @@ def scraper(url, resp):
     resp = resp.raw_response
     try:  # check for valid url
 
-        if not 200 <= resp.status <= 203: return []
+        # if not (200 <= resp.status <= 203): return []
         head = resp.headers
         if 'content-type' in head \
             and head['content-type'].find("html") == -1\
@@ -41,11 +41,14 @@ def scraper(url, resp):
 
     count += 1
 
-    monitor_info()
-    soup = BeautifulSoup(resp.text, "lxml")
+    monitor_info(url)
     links = extract_next_links(soup)
     extract_info(url, soup)
     return [link for link in links if is_valid(link)]
+
+def is_ascii(s):
+    """Check if the characters in string s are in ASCII, U+0-U+7F."""
+    return len(s) == len(s.encode())
 
 def monitor_info(url, show_extra=False):
     print("="*40)
@@ -84,7 +87,7 @@ def extract_info(url, soup):
         words = re.finditer(token_pat, l)
         for w in words:
             w = w.group().lower()
-            if w not in stop_words and len(w) > 1 and w.isascii():
+            if w not in stop_words and len(w) > 1 and is_ascii(w):
                 page_word_count += 1
                 if not w in word_freqs: word_freqs[w] = 0
                 word_freqs[w] += 1

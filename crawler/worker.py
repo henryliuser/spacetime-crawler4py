@@ -26,7 +26,6 @@ class Worker(Thread):
         with open(filepath, 'w') as f:
             f.write(f"{repr(scraper.count)}\n{repr(scraper.longest_page)}\n"
                     f"{repr(scraper.peak_words)}\n")
-            print(repr(scraper.seen))
             f.write(f"{repr(scraper.seen)}\n{repr(scraper.word_freqs)}"
                     f"\n{repr(scraper.domains)}\n{repr(scraper.ics_subdomains)}\n")
 
