@@ -3,28 +3,30 @@ from urllib.parse import urlparse, urldefrag
 from bs4 import BeautifulSoup
 from collections import defaultdict
 
+count = 0
 seen = set()
 word_freqs = defaultdict(int)
 longest_page = ""
-peak_words = -1
+peak_words = 0
 
 
 with open('stopWords.txt', 'r') as f:
-    stop_words = {line for line in f}
+    stop_words = {line.rstrip() for line in f}
 
 def scraper(url, resp):
+    global count
     resp = resp.raw_response
     if not resp: return []
-    print(url, end='')
     try:
         head = resp.headers
-        print(' ||', head['content-type'])
         if 'content-type' in head and head['content-type'].find("html") == -1: return [] # type restriction
         if 'content-length' in head and int(head['content-length']) > 4000000: return [] # size restriction 4MB
     except (AttributeError, KeyError):
         pass
+    count += 1
+    print(url)
     monitor_info()
-    seen.add(url)
+    # seen.add(url)
 
     soup = BeautifulSoup(resp.text, "lxml")
     links = extract_next_links(soup)
@@ -32,18 +34,25 @@ def scraper(url, resp):
     return [link for link in links if is_valid(link)]
 
 def monitor_info():
-    print("\n" + "="*20)
-    print(f"UNIQUE LINKS: {len(seen)}")
+    print("="*40)
+    print(f"UNIQUE LINKS VISITED:    {count}")
+    print(f"UNIQUE LINKS DISCOVERED: {len(seen)}")
     print(f"UNIQUE WORDS: {len(word_freqs)}")
-    print(f"LONGEST PAGE: {longest_page} || # WORDS: {peak_words}")
-    if len(seen) % 30 == 0: # every 30, print the domain counts
-        print("-"*20)
+    print(f"LONGEST PAGE: {peak_words} WORDS | {longest_page}")
+    if count % 25 == 0: # every 25, print extra info
+        print("-"*40)
+        print("TOP FREQUENT WORDS:")
+        for x in sorted(word_freqs, key=lambda x:-word_freqs[x])[:5]:
+            print(f"{word_freqs[x]:<7} | {x}")
+        print("-" * 40)
         print("DOMAIN COUNTS:")
-        for k,v in domains.items(): print(f"{v:<6}| {k}")
-        print("-"*20)
+        pretty = r'\\'
+        for k,v in domains.items():
+            print(f"{v:<6} | {re.sub(pretty, '', k if k[0] != '.' else k[1:])}")
+        print("-"*40)
         print("ICS SUBDOMAIN COUNTS:")
-        for k,v in ics_subdomains.items(): print(f"{v:<6}| {k}")
-    print("="*20, end="\n\n")
+        for k,v in ics_subdomains.items(): print(f"{v:<6} | {k}")
+    print("="*40, end="\n\n")
 
 def extract_next_links(soup):
     return [urldefrag(a.get('href')).url for a in soup.find_all('a')]
@@ -59,7 +68,7 @@ def extract_info(url, soup):
         words = re.finditer(token_pat, l)
         for w in words:
             w = w.group().lower()
-            if w not in stop_words:
+            if w not in stop_words and len(w) > 1:
                 page_word_count += 1
                 word_freqs[w] += 1
     if page_word_count > peak_words:
@@ -76,8 +85,9 @@ r"today\.uci\.edu\/department\/information_computer_sciences\/.*":0,
 ics_subdomains = defaultdict(int)
 def is_valid(url):
     try:
-        if not url or url in seen: return False
         parsed = urlparse(url)
+        s_url = parsed.netloc + parsed.path
+        if not s_url or s_url in seen: return False
         if parsed.scheme not in {"http", "https"}:
             return False
         if re.match(
@@ -91,10 +101,11 @@ def is_valid(url):
                 + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower()): return False
 
         for d in domains:
-            if re.match(d, url):
+            if re.match(d, s_url):
                 domains[d] += 1
                 if d == r".*\.ics\.uci\.edu\/.*":
                     ics_subdomains[parsed.netloc] += 1
+                seen.add(s_url)
                 return True
         return False
 
