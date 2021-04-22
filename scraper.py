@@ -18,7 +18,8 @@ r".*\.stat\.uci\.edu\/.*":0,
 r".*\.today\.uci\.edu\/department\/information_computer_sciences\/.*":0,
 }
 ics_subdomains = {}
-
+disallowed = set()
+robot = "/robots.txt"
 
 
 with open('stopWords.txt', 'r') as f:
@@ -80,7 +81,7 @@ def extract_next_links(soup):
 token_pat = r"[^_\W]+"
 def extract_info(url, soup):
     global peak_words, longest_page
-    lines = soup.get_text().split("\n")
+    lines = soup.get_text().strip().split("\n")
     page_word_count = 0
     for l in lines:
         l = l.strip()
@@ -95,6 +96,24 @@ def extract_info(url, soup):
         longest_page = url
         peak_words = page_word_count
 
+def robots(url):
+    global disallowed
+    
+    robotFile = url + robot
+    resp = requests.get(robotFile)
+    status = False
+    if resp.status_code == 200:
+        soup = BeautifulSoup(resp.txt, "html.parser")
+        lines = soup.get_text().strip().split('\n')
+        for line in lines:
+            if "User-agent" in line and line[11:].strip() == "*":
+                status = True
+                continue
+            elif "User-agent" in line and status == True:
+                break # different User-agent, so break out
+            elif "Disallow" in line and status == True:
+                disallowed.add(url + line[9:].strip())
+
 def is_valid(url, resp):
     try:    
         parsed = urlparse(url)
@@ -106,6 +125,8 @@ def is_valid(url, resp):
             return False
         #if not 200 <= head.status_code <= 202: return False
         if not 200 <= resp.status_code <= 202: return False
+        robots(url)
+        if url in disallowed: return False
         if re.match(
                 r".*\.(css|js|bmp|gif|jpe?g|ico"
                 + r"|png|tiff?|mid|mp2|mp3|mp4"
