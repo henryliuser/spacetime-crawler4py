@@ -43,10 +43,10 @@ def scraper(url, resp):
 
     count += 1
     
-    sitemaps = robots(url) 
+    sitemap_urls = robots(url) 
     monitor_info(url)
     links = extract_next_links(soup)
-    links += sitemaps  # links + additional links using sitemaps
+    links += sitemap_urls  # links + additional links using sitemaps
     extract_info(url, soup)
     return [link for link in links if link != "" and is_valid(link, resp)]
 
