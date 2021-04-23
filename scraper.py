@@ -42,9 +42,11 @@ def scraper(url, resp):
         return []
 
     count += 1
-
+    
+    sitemaps = robots(url) 
     monitor_info(url)
     links = extract_next_links(soup)
+    links += sitemaps  # links + additional links using sitemaps
     extract_info(url, soup)
     return [link for link in links if link != "" and is_valid(link, resp)]
 
@@ -97,13 +99,15 @@ def extract_info(url, soup):
         peak_words = page_word_count
 
 def robots(url):
-    global disallowed
+    global disallowed, robot
+    sitemaps = set()
+    url_list = []
     
     robotFile = url + robot
     resp = requests.get(robotFile)
     status = False
     if resp.status_code == 200:
-        soup = BeautifulSoup(resp.txt, "html.parser")
+        soup = BeautifulSoup(resp.text, "html.parser")
         lines = soup.get_text().strip().split('\n')
         for line in lines:
             if "User-agent" in line and line[11:].strip() == "*":
@@ -113,6 +117,15 @@ def robots(url):
                 break # different User-agent, so break out
             elif "Disallow" in line and status == True:
                 disallowed.add(url + line[9:].strip())
+            elif "Sitemap" in line and line[8:].strip().find("xml"):
+                sitemaps.add(line[8:].strip())
+    for sitemap in sitemaps:
+        r = requests.get(sitemap)
+        s = BeautifulSoup(r.text, "lxml")
+        urls = [url.get_text() for url in s.find_all("loc")]
+        url_list += urls
+
+    return url_list
 
 def is_valid(url, resp):
     try:    
@@ -125,7 +138,6 @@ def is_valid(url, resp):
             return False
         #if not 200 <= head.status_code <= 202: return False
         if not 200 <= resp.status_code <= 202: return False
-        robots(url)
         if url in disallowed: return False
         if re.match(
                 r".*\.(css|js|bmp|gif|jpe?g|ico"
