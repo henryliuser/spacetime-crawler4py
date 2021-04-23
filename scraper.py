@@ -120,10 +120,13 @@ def robots(url):
             elif "Sitemap" in line and line[8:].strip().find("xml"):
                 sitemaps.add(line[8:].strip())
     for sitemap in sitemaps:
-        r = requests.get(sitemap)
-        s = BeautifulSoup(r.text, "lxml")
-        urls = [url.get_text() for url in s.find_all("loc")]
-        url_list += urls
+        if sitemap.startswith("http") and sitemap.endswith("xml"):
+            r = requests.get(sitemap)
+            s = BeautifulSoup(r.text, "lxml")
+            urls = [url.get_text() for url in s.find_all("loc")]
+            url_list += urls
+        else:
+            continue
 
     return url_list
 
