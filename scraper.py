@@ -134,7 +134,7 @@ def is_valid(url, resp):
     try:    
         parsed = urlparse(url)
         s_url = (parsed.netloc + parsed.path).lower()
-        if s_url == "ics.uci.edu/~kay/wordlist.txt": return False
+        if s_url == "http://www.ics.uci.edu/~kay/wordlist.txt": return False
         #head = requests.head(url)
         if not s_url or s_url in seen: return False
         if parsed.scheme not in {"http", "https"}:
