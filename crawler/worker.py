@@ -16,11 +16,14 @@ class Worker(Thread):
 
     def load_data(self, filepath="saveData.txt"):
         with open(filepath, 'r') as f:
-            scraper.count        = eval(f.readline().rstrip())
-            scraper.longest_page = eval(f.readline().rstrip())
-            scraper.peak_words   = eval(f.readline().rstrip())
-            scraper.seen         = eval(f.readline().rstrip())
-            scraper.word_freqs   = eval(f.readline().rstrip())
+            scraper.count           = eval(f.readline().rstrip())
+            scraper.longest_page    = eval(f.readline().rstrip())
+            scraper.peak_words      = eval(f.readline().rstrip())
+            scraper.seen            = eval(f.readline().rstrip())
+            scraper.word_freqs      = eval(f.readline().rstrip())
+            scraper.domains         = eval(f.readline().rstrip())
+            scraper.ics_subdomains  = eval(f.readline().rstrip())
+
 
     def save_data(self, filepath="saveData.txt"):
         with open(filepath, 'w') as f:
