@@ -20,6 +20,8 @@ r".*\.today\.uci\.edu\/department\/information_computer_sciences\/.*":0,
 ics_subdomains = {}
 disallowed = set()
 robot = "/robots.txt"
+manual_restrictions = {"www.ics.uci.edu/~kay/wordlist.txt"}
+
 
 
 with open('stopWords.txt', 'r') as f:
@@ -29,8 +31,6 @@ def scraper(url, resp):
     global count
     resp = resp.raw_response
     try:  # check for valid url
-
-        # if not (200 <= resp.status <= 203): return []
         head = resp.headers
         if 'content-type' in head \
             and head['content-type'].find("html") == -1\
@@ -134,12 +134,10 @@ def is_valid(url, resp):
     try:    
         parsed = urlparse(url)
         s_url = (parsed.netloc + parsed.path).lower()
-        if s_url == "http://www.ics.uci.edu/~kay/wordlist.txt": return False
-        #head = requests.head(url)
+        if s_url in manual_restrictions: return False
         if not s_url or s_url in seen: return False
         if parsed.scheme not in {"http", "https"}:
             return False
-        #if not 200 <= head.status_code <= 202: return False
         if not 200 <= resp.status_code <= 202: return False
         if url in disallowed: return False
         if re.match(
