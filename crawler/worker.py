@@ -31,6 +31,17 @@ class Worker(Thread):
                     f"{repr(scraper.peak_words)}\n")
             f.write(f"{repr(scraper.seen)}\n{repr(scraper.word_freqs)}"
                     f"\n{repr(scraper.domains)}\n{repr(scraper.ics_subdomains)}\n")
+            
+    def save_data_simpler(self, filepath = "Report.txt"):
+        with open(filepath, 'w') as f:
+            f.write(f"1) There are {repr(scraper.count)} unique pages found.\n\n")
+            f.write(f"2) The longest page: {repr(scraper.longest_page)} had {repr(scraper.peak_words)} words.\n\n")
+            f.write(f"3) 50 Most Common Words:\n")
+            for x in sorted(scraper.word_freqs, key = lambda x:-scraper.word_freqs[x])[:50]:
+                    f.write(f"{scraper.word_freqs[x]:<7} | {x}\n")
+            f.write(f"\n4) There are {repr(len(scraper.ics_subdomains))} total subdomains under \'ics.uci.edu\'.\n")
+            for k,v in scraper.ics_subdomains.items():
+                               f.write(f"{v:<7} | {k}\n")
 
     def run(self):
         try: self.load_data()
@@ -53,4 +64,5 @@ class Worker(Thread):
             if self.count % 50 == 0:
                 self.save_data()
         self.save_data()
+        self.save_data_simpler()
         scraper.monitor_info("", True)
